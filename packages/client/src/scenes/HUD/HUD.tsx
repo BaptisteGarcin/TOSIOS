@@ -21,7 +21,8 @@ export interface HUDProps {
     playersMaxCount: number;
     messages: Models.MessageJSON[];
     announce: string;
-    volume: number;
+    volumes: any;
+    stream?: any;
 }
 
 /**
@@ -45,7 +46,7 @@ export const HUD = React.memo(
             playerLives,
             playerMaxLives,
             players,
-            volume,
+            volumes,
             playersCount,
             playersMaxCount,
             messages,
@@ -95,11 +96,15 @@ export const HUD = React.memo(
             };
         }, []);
 
+        React.useEffect(() => {
+            console.log(volumes)
+        }, [volumes])
+
         return (
             <View flex center fullscreen style={styles.hud}>
                 {/* Health */}
                 <Health name={playerName} lives={playerLives} maxLives={playerMaxLives} style={styles.health} />
-                <p>{volume}</p>
+                <p>{(Array.from(volumes.values()) || []).map((volume: any) => `${volume} <br/>`)}</p>
                 {/* Time */}
                 <Time mode={gameMode} endsAt={gameModeEndsAt} style={styles.time} />
 
