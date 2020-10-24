@@ -1,7 +1,7 @@
 import { Client, Room } from 'colyseus.js';
 import { Constants, Keys, Maths, Types } from '@tosios/common';
 import { HUD, HUDProps } from './HUD';
-import React, { Component, RefObject } from 'react';
+import React, { Component, RefObject, useState, useReducer, useRef } from 'react';
 import { RouteComponentProps, navigate } from '@reach/router';
 import GameManager from '../managers/GameManager';
 import { Helmet } from 'react-helmet';
@@ -10,7 +10,8 @@ import ReactNipple from 'react-nipple';
 import { View } from '../components';
 import { isMobile } from 'react-device-detect';
 import qs from 'querystringify';
-
+import io from 'socket.io-client';
+import Peer from 'simple-peer';
 interface IProps extends RouteComponentProps {
     roomId?: string;
 }
@@ -21,6 +22,7 @@ interface IState {
 
 export default class Game extends Component<IProps, IState> {
     private gameCanvas: RefObject<HTMLDivElement>;
+    private socketRef: any;
 
     private gameManager: GameManager;
 
@@ -33,10 +35,10 @@ export default class Game extends Component<IProps, IState> {
     // BASE
     constructor(props: IProps) {
         super(props);
-
+        
         this.gameCanvas = React.createRef();
         this.gameManager = new GameManager(window.innerWidth, window.innerHeight, this.handleActionSend);
-
+        this.socketRef = React.createRef();
         this.state = {
             hud: {
                 gameMode: '',
@@ -48,6 +50,7 @@ export default class Game extends Component<IProps, IState> {
                 playerLives: 0,
                 playerMaxLives: 0,
                 players: [],
+                volume: 0,
                 playersCount: 0,
                 playersMaxCount: 0,
                 messages: [],
@@ -56,9 +59,151 @@ export default class Game extends Component<IProps, IState> {
         };
     }
 
+    // const [peers, setPeers] = useState([]);
+    // const [speakers, setSpeakers] = useState(new Map());
+    // const [volume, setVolume] = useState(0);
+    // const [volume2, setVolume2] = useState(0);
+    // const userVideo = useRef();
+    // const peersRef = useRef([]);
+    // const roomID = props.match.params.roomID;
+
     componentDidMount() {
+        console.log("componentMounted");
         this.start();
+        // window.AudioContext = window.AudioContext || window.webkitAudioContext;
+        this.socketRef.current = io.connect("/");
+        navigator.mediaDevices
+          .getUserMedia({ video: false, audio: true })
+          .then(stream => {
+              console.log("Got user media");
+                          const audioContext = new AudioContext();
+            const mediaStreamSource = audioContext.createMediaStreamSource(stream);
+            const processor = audioContext.createScriptProcessor(2048, 1, 1);
+    
+            mediaStreamSource.connect(audioContext.destination);
+            mediaStreamSource.connect(processor);
+            processor.connect(audioContext.destination);
+    
+            processor.onaudioprocess = (e) => {
+            const inputData = e.inputBuffer.getChannelData(0);
+            const inputDataLength = inputData.length;
+            let total = 0;
+    
+            for (let i = 0; i < inputDataLength; i++) {
+                total += Math.abs(inputData[i++]);
+            }
+    
+            const rms = Math.sqrt(total / inputDataLength);
+            this.setState({ hud: { ...this.state.hud, volume:  rms * 100} });
+            //setSpeakers(speakers.set(socketRef.current.id, rms * 100));
+            };
+          })
+        // navigator.mediaDevices
+        //   .getUserMedia({ video: false, audio: true })
+        //   .then(stream => {
+        //     const audioContext = new AudioContext();
+        //     const mediaStreamSource = audioContext.createMediaStreamSource(stream);
+        //     const processor = audioContext.createScriptProcessor(2048, 1, 1);
+    
+        //     mediaStreamSource.connect(audioContext.destination);
+        //     mediaStreamSource.connect(processor);
+        //     processor.connect(audioContext.destination);
+    
+        //     processor.onaudioprocess = function(e) {
+        //       const inputData = e.inputBuffer.getChannelData(0);
+        //       const inputDataLength = inputData.length;
+        //       let total = 0;
+    
+        //       for (let i = 0; i < inputDataLength; i++) {
+        //         total += Math.abs(inputData[i++]);
+        //       }
+    
+        //       const rms = Math.sqrt(total / inputDataLength);
+        //       setVolume(rms * 100);
+        //       //setSpeakers(speakers.set(socketRef.current.id, rms * 100));
+        //     };
+        //     userVideo.current.srcObject = stream;
+        //     socketRef.current.emit("join room", roomID);
+        //     socketRef.current.on("all users", users => {
+        //       const peers = [];
+        //       users.forEach(userID => {
+        //         const peer = createPeer(userID, socketRef.current.id, stream);
+        //         peersRef.current.push({
+        //           peerID: userID,
+        //           peer
+        //         });
+        //         peers.push(peer);
+        //       });
+        //       setPeers(peers);
+        //     });
+    
+        //     socketRef.current.on("user joined", payload => {
+        //       const peer = addPeer(payload.signal, payload.callerID, stream);
+        //       peersRef.current.push({
+        //         peerID: payload.callerID,
+        //         peer
+        //       });
+    
+        //       setPeers(users => [...users, peer]);
+        //     });
+    
+        //     socketRef.current.on("receiving returned signal", payload => {
+        //       const item = peersRef.current.find(p => p.peerID === payload.id);
+        //       item.peer.signal(payload.signal);
+        //     });
+        //   });
     }
+
+    // function createPeer(userToSignal, callerID, stream) {
+    //     const peer = new Peer({
+    //       initiator: true,
+    //       trickle: false,
+    //       stream
+    //     });
+    //     peer.on("signal", signal => {
+    //       socketRef.current.emit("sending signal", {
+    //         userToSignal,
+    //         callerID,
+    //         signal
+    //       });
+    //     });
+    
+    //     return peer;
+    //   }
+    
+    //   function addPeer(incomingSignal, callerID, stream) {
+    //     const peer = new Peer({
+    //       initiator: false,
+    //       trickle: false,
+    //       stream
+    //     });
+    
+    //     const audioContext = new AudioContext();
+    //     const mediaStreamSource = audioContext.createMediaStreamSource(stream);
+    //     const processor = audioContext.createScriptProcessor(2048, 1, 1);
+    
+    //     mediaStreamSource.connect(audioContext.destination);
+    //     mediaStreamSource.connect(processor);
+    //     processor.connect(audioContext.destination);
+    
+    //     processor.onaudioprocess = function(e) {
+    //       const inputData = e.inputBuffer.getChannelData(0);
+    //       const inputDataLength = inputData.length;
+    //       let total = 0;
+    
+    //       for (let i = 0; i < inputDataLength; i++) {
+    //         total += Math.abs(inputData[i++]);
+    //       }
+    
+    //       const rms = Math.sqrt(total / inputDataLength);
+    //       setVolume2(rms * 100);
+    //       //setSpeakers(speakers.set(socketRef.current.id, rms * 100));
+    //     };
+    
+    //     peer.signal(incomingSignal);
+    
+    //     return peer;
+    //   } 
 
     componentWillUnmount() {
         this.stop();
@@ -402,6 +547,7 @@ export default class Game extends Component<IProps, IState> {
                     playerLives={hud.playerLives}
                     playerMaxLives={hud.playerMaxLives}
                     players={hud.players}
+                    volume={hud.volume}
                     playersCount={hud.playersCount}
                     playersMaxCount={hud.playersMaxCount}
                     messages={hud.messages}

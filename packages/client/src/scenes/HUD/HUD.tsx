@@ -21,6 +21,7 @@ export interface HUDProps {
     playersMaxCount: number;
     messages: Models.MessageJSON[];
     announce: string;
+    volume: number;
 }
 
 /**
@@ -44,6 +45,7 @@ export const HUD = React.memo(
             playerLives,
             playerMaxLives,
             players,
+            volume,
             playersCount,
             playersMaxCount,
             messages,
@@ -97,7 +99,7 @@ export const HUD = React.memo(
             <View flex center fullscreen style={styles.hud}>
                 {/* Health */}
                 <Health name={playerName} lives={playerLives} maxLives={playerMaxLives} style={styles.health} />
-
+                <p>{volume}</p>
                 {/* Time */}
                 <Time mode={gameMode} endsAt={gameModeEndsAt} style={styles.time} />
 
