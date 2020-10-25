@@ -104,7 +104,7 @@ export const HUD = React.memo(
             <View flex center fullscreen style={styles.hud}>
                 {/* Health */}
                 <Health name={playerName} lives={playerLives} maxLives={playerMaxLives} style={styles.health} />
-                <p>{(Array.from(volumes.values()) || []).map((volume: any) => `${volume} <br/>`)}</p>
+                <p>{(Array.from(volumes || [])).map(([playerId, volume]: any) => <>{playerId} {volume}<br/><br/></>)}</p>
                 {/* Time */}
                 <Time mode={gameMode} endsAt={gameModeEndsAt} style={styles.time} />
 
