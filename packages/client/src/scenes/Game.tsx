@@ -97,7 +97,7 @@ export default class Game extends Component<IProps, IState> {
           }
     
           const rms = Math.sqrt(total / inputDataLength);
-          this.setState({ hud: { ...this.state.hud, volumes: this.state.hud.volumes.set(callerID, rms * 100)} });
+          this.setState({ hud: { ...this.state.hud, volumes: this.state.hud.volumes.set(callerID, Math.trunc(rms * 100))} });
         };    
         return peer;
       }

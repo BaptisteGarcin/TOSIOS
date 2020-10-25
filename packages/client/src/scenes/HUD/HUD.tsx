@@ -4,6 +4,7 @@ import React, { CSSProperties } from 'react';
 import { Announce } from './Announce';
 import { View } from '../../components';
 import { isMobile } from 'react-device-detect';
+import { Voice } from './Voice';
 
 const HUD_PADDING = isMobile ? 16 : 24;
 
@@ -104,7 +105,10 @@ export const HUD = React.memo(
             <View flex center fullscreen style={styles.hud}>
                 {/* Health */}
                 <Health name={playerName} lives={playerLives} maxLives={playerMaxLives} style={styles.health} />
-                <p>{(Array.from(volumes || [])).map(([playerId, volume]: any) => <>{playerId} {volume}<br/><br/></>)}</p>
+                
+                {/* Voice */}
+                <Voice volumes={volumes} style={styles.voice} />
+                
                 {/* Time */}
                 <Time mode={gameMode} endsAt={gameModeEndsAt} style={styles.time} />
 
@@ -148,6 +152,11 @@ const styles: { [key: string]: CSSProperties } = {
         position: 'absolute',
         left: HUD_PADDING,
         top: HUD_PADDING,
+    },
+    voice: {
+        position: 'absolute',
+        left: HUD_PADDING,
+        top: HUD_PADDING + 120,
     },
     time: {
         position: 'absolute',
