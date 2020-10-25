@@ -1,7 +1,7 @@
 import { Client, Room } from 'colyseus.js';
 import { Constants, Keys, Maths, Types } from '@tosios/common';
 import { HUD, HUDProps } from './HUD';
-import React, { Component, RefObject, useState, useReducer, useRef } from 'react';
+import React, { Component, RefObject } from 'react';
 import { RouteComponentProps, navigate } from '@reach/router';
 import GameManager from '../managers/GameManager';
 import { Helmet } from 'react-helmet';
@@ -10,7 +10,6 @@ import ReactNipple from 'react-nipple';
 import { View } from '../components';
 import { isMobile } from 'react-device-detect';
 import qs from 'querystringify';
-import io from 'socket.io-client';
 import Peer from 'simple-peer';
 interface IProps extends RouteComponentProps {
     roomId?: string;
@@ -22,7 +21,6 @@ interface IState {
 
 export default class Game extends Component<IProps, IState> {
     private gameCanvas: RefObject<HTMLDivElement>;
-    private socketRef: any;
 
     private gameManager: GameManager;
 
@@ -38,7 +36,6 @@ export default class Game extends Component<IProps, IState> {
         
         this.gameCanvas = React.createRef();
         this.gameManager = new GameManager(window.innerWidth, window.innerHeight, this.handleActionSend);
-        this.socketRef = React.createRef();
         this.state = {
             hud: {
                 gameMode: '',
@@ -60,28 +57,18 @@ export default class Game extends Component<IProps, IState> {
         };
     }
 
-    // const [peers, setPeers] = useState([]);
-    // const [speakers, setSpeakers] = useState(new Map());
-    // const [volume, setVolume] = useState(0);
-    // const [volume2, setVolume2] = useState(0);
-    // const userVideo = useRef();
-    // const peersRef = useRef([]);
-    // const roomID = props.match.params.roomID;
-
     componentDidMount() {
         console.log("componentMounted");
         this.start();
         this.voiceChatInit();
-        // window.AudioContext = window.AudioContext || window.webkitAudioContext;
-        //this.socketRef.current = io.connect("/");
     }
 
     voiceChatInit = () => {
         return navigator.mediaDevices
             .getUserMedia({ video: false, audio: true })
             .then(stream => {
-            console.log("Got user media");
-            this.setState({ hud: { ...this.state.hud, stream: stream} });
+                console.log("Got user media");
+                this.setState({ hud: { ...this.state.hud, stream: stream} });
             });
     }
 
@@ -233,10 +220,9 @@ export default class Game extends Component<IProps, IState> {
         console.log("adding player");
         if(this.state.hud.stream){
             this.addPeer(playerId, this.state.hud.stream)
-        }else{
-            this.voiceChatInit().then(() => {
-            this.addPeer(playerId, this.state.hud.stream)
-            })
+        } else {
+            this.voiceChatInit()
+                .then(() => this.addPeer(playerId, this.state.hud.stream));
         }
         const isMe = this.isPlayerIdMe(playerId);
         this.gameManager.playerAdd(playerId, player, isMe);
